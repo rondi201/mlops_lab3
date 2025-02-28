@@ -1,0 +1,14 @@
+services:
+  api:
+    # Сервис по сопоставлению СИЗ с людьми и нахождению нарушений в их ношении на основе данных от `human-info-detection-service`
+    build: .
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: curl --output /dev/null --silent --head --fail http://127.0.0.1:8000/health
+      interval: 15s
+      timeout: 3s
+      retries: 4
+      start_period: 5s
+    environment:
+      LOG_LEVEL: INFO
