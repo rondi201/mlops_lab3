@@ -2,6 +2,7 @@ services:
   api:
     # Сервис по сопоставлению СИЗ с людьми и нахождению нарушений в их ношении на основе данных от `human-info-detection-service`
     build: .
+    image: rondi201/mlops_lab1:latest
     ports:
       - "8000:8000"
     healthcheck:
