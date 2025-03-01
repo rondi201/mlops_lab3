@@ -3,7 +3,8 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDS=credentials('mlops_lab')
-        PROJECT_NAME='mlops_lab1'
+        REPO_NAME='mlops_lab1'
+        PROJECT_NAME='mlops-lab1'
     }
 
 options {
@@ -13,8 +14,8 @@ options {
     stages {
         stage('Checkout repo dir') {
             steps {
-                    sh 'git clone https://github.com/rondi201/${PROJECT_NAME}.git'
-                    sh 'cd ${PROJECT_NAME} && ls -lash'
+                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git'
+                    sh 'cd ${REPO_NAME} && ls -lash'
                     sh 'whoami'
 				}
 			}
@@ -29,11 +30,11 @@ options {
             steps {
                 script {
                     try {
-                            sh 'cd ${PROJECT_NAME} && docker compose build'
+                            sh 'cd ${REPO_NAME} && docker compose build'
                         }
 
                     finally {
-                            sh 'cd ${PROJECT_NAME} && docker compose up -d'
+                            sh 'cd ${REPO_NAME} && docker compose up -d'
                         }
 				    }
                 }
@@ -44,7 +45,7 @@ options {
                 timeout(time: 180, unit: 'SECONDS')
             }
             steps {
-                dir("${PROJECT_NAME}") {
+                dir("${REPO_NAME}") {
                     sh '''
                         containerId=$(docker ps -qf "name=^${PROJECT_NAME}-api")
                         until [ "`docker inspect -f {{.State.Health.Status}} $containerId`"=="healthy" ]; do
@@ -57,7 +58,7 @@ options {
 
         stage('Checkout container logs') {
             steps {
-                dir("${PROJECT_NAME}") {
+                dir("${REPO_NAME}") {
                     script {
                         try {
                             timeout(time: 30, unit: 'SECONDS') {
@@ -79,7 +80,7 @@ options {
 
         stage('Checkout coverage report'){
             steps{
-                dir("${PROJECT_NAME}"){
+                dir("${REPO_NAME}"){
                         sh '''
                         docker compose logs -t --tail 10
                         '''
@@ -98,8 +99,8 @@ options {
         always {
                 sh 'docker logout'
                 script {
-                    if (fileExists("${PROJECT_NAME}/docker-compose.yaml")) {
-                        sh 'cd ${PROJECT_NAME} && docker compose down -v'
+                    if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
+                        sh 'cd ${REPO_NAME} && docker compose down -v'
                     }
                 }
                 cleanWs()
