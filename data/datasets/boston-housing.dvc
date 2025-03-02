@@ -1,0 +1,6 @@
+outs:
+- md5: ff2f16b3faed90cc047e3dd9481171d7.dir
+  size: 39567
+  nfiles: 4
+  hash: md5
+  path: boston-housing

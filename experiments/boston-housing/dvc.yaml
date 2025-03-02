@@ -1,0 +1,20 @@
+vars:
+  - dataset:
+      root: data/datasets
+      name: boston-housing
+  - time_limit: 5.0
+  - weights:
+      root: data/weights
+
+metrics:
+  - ../../${weights.root}/${dataset.name}/metrics.yaml
+
+stages:
+  train-automl:
+    cmd: python -m src.train ${dataset.root}/${dataset.name} -t ${time_limit} --save-dir ${weights.root} --save-name ${dataset.name}
+    wdir: ../../  # Root каталог
+    deps:
+      - ${dataset.root}/${dataset.name}
+      - src/train.py
+    outs:
+      - ${weights.root}/${dataset.name}

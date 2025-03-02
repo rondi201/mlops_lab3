@@ -1,0 +1,21 @@
+schema: '2.0'
+stages:
+  train-automl:
+    cmd: python -m src.train data/datasets/boston-housing -t 5.0 --save-dir data/weights
+      --save-name boston-housing
+    deps:
+    - path: data/datasets/boston-housing
+      hash: md5
+      md5: ff2f16b3faed90cc047e3dd9481171d7.dir
+      size: 39567
+      nfiles: 4
+    - path: src/train.py
+      hash: md5
+      md5: 53e167e291d586d1a8dbe5cc5e809af6
+      size: 7321
+    outs:
+    - path: data/weights/boston-housing
+      hash: md5
+      md5: 1b9a26738d9e592f719e12a5812e7208.dir
+      size: 800258
+      nfiles: 6

@@ -49,29 +49,6 @@ def dataset_configs_route():
     return APIMethods.get_dataset_configs()
 
 
-@app.post("/train", tags=["models"])
-def train_route(
-        dataset_name: str,
-        time_limit: float = 5.0
-):
-    """
-    Обучение модели на `dataset_name` наборе данных
-
-    Args:
-        dataset_name (string): Имя набора данных
-        time_limit (float): Максимально допустимое время (в минутах) для поиска оптимального решения
-
-    Returns:
-        (string) Json с информацией о модели и её метриках
-    """
-    model_info = APIMethods.run_train(
-        dataset_name=dataset_name,
-        time_limit=time_limit
-    )
-    print('model_info', model_info)
-    return model_info
-
-
 @app.post("/predict", tags=["models"])
 def predict_route(
         dataset_name: str,
