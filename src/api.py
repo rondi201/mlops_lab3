@@ -5,7 +5,7 @@ import psutil
 import uvicorn
 from fastapi import FastAPI, UploadFile, File
 
-from src.api_methods import get_dataset_names, get_dataset_configs, get_predict, run_train
+from src.api_methods import APIMethods
 from src.logger import LoggerFactory
 from src.config import api_config
 
@@ -32,12 +32,21 @@ def health():
 
 @app.get("/datasets", tags=["datasets"])
 def dataset_names_route():
-    return get_dataset_names()
+    """ Получение имён наборов данных """
+    return APIMethods.get_dataset_names()
 
 
 @app.get("/datasets/configs", tags=["datasets"])
 def dataset_configs_route():
-    return get_dataset_configs()
+    """
+    Получение конфигурация наборов данных
+
+    Returns:
+        (string) Json вида {
+            <dataset_name>: <dataset_config>
+        }
+    """
+    return APIMethods.get_dataset_configs()
 
 
 @app.post("/train", tags=["models"])
@@ -45,7 +54,17 @@ def train_route(
         dataset_name: str,
         time_limit: float = 5.0
 ):
-    model_info = run_train(
+    """
+    Обучение модели на `dataset_name` наборе данных
+
+    Args:
+        dataset_name (string): Имя набора данных
+        time_limit (float): Максимально допустимое время (в минутах) для поиска оптимального решения
+
+    Returns:
+        (string) Json с информацией о модели и её метриках
+    """
+    model_info = APIMethods.run_train(
         dataset_name=dataset_name,
         time_limit=time_limit
     )
@@ -58,8 +77,18 @@ def predict_route(
         dataset_name: str,
         data_file: UploadFile = File(...),
 ):
+    """
+    Предсказание данных из `data_file`файла моделью, обученной на `dataset_name` наборе данных.
+
+    Args:
+        dataset_name (string): Имя набора данных
+        data_file (file): Файл формата .csv, содержащий столбцы признаков из обучающего набора данных
+
+    Returns:
+        (string) Json массив предсказанных значений для каждой строки из data
+    """
     data = pd.read_csv(data_file.file)
-    result_array = get_predict(
+    result_array = APIMethods.get_predict(
         data,
         dataset_name=dataset_name
     )

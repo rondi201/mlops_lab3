@@ -16,6 +16,18 @@ def predict(
         task: Literal['classification', 'regression'],
         weight_path: str | Path,
 ) -> np.ndarray:
+    """
+    Функция предсказания для модели AutoML
+
+    Args:
+        data (pd.DataFrame): Таблица с данными для предсказания
+        task (str): Тип прогнозируемой задачи - 'classification' или 'regression'
+        weight_path (str | list[str]): Путь до весов модели, используемой для предсказания.
+            Модель должна быть обучена на том же наборе данных, откуда и `data`
+
+    Returns:
+        (np.ndarray[N]): Массив предсказанных значений для каждой строки из data
+    """
     predict_task_id = str(uuid.uuid4())[:8]
 
     # Загрузим модель

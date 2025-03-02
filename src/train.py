@@ -19,6 +19,20 @@ def train(
         index_col: str | None = None,
         timeout: float = 5,
 ):
+    """
+    Функция обучения моделей AutoML
+
+    Args:
+        data_path (str | Path): Путь до .csv файла с данными
+        task (str): Тип прогнозируемой задачи - 'classification' или 'regression'
+        target_columns (str | list[str]): Целевые столбцы в данных, которые требуется предсказать
+        save_model_path (str | Path): Путь для сохранения весов моделей
+        index_col (str, optional): Колонка индекса в базе данных (будет отброшена при обучении)
+        timeout (str): Максимально допустимое время (в минутах) для поиска оптимального решения
+
+    Returns:
+        (dict[str, any]): Словарь с информацией о модели и её метриках
+    """
     train_task_id = str(uuid.uuid4())[:8]
 
     # Выберем метрики
