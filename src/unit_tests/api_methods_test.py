@@ -43,7 +43,7 @@ class APIMethodsTest(unittest.TestCase):
 
     # ------------- Проверим работу обучения модели ---------------------
 
-    def test_train_model(self):
+    def test_a_train_model(self):
         save_path = Path(self.weights_root, self.test_dataset_name)
         if save_path.exists():
             shutil.rmtree(save_path)
@@ -53,7 +53,7 @@ class APIMethodsTest(unittest.TestCase):
 
     # ------------ Проверим работу предсказания модели -------------------
 
-    def test_predict_model(self):
+    def test_b_predict_model(self):
         data_path = Path(self.datasets_root, self.test_dataset_name, 'test.csv')
         data = pd.read_csv(data_path)
         predict = APIMethods.get_predict(data, self.test_dataset_name)

@@ -1,6 +1,7 @@
-scikit-learn==1.6.1
-scipy==1.12.0
 numpy==1.26.4
+scikit-learn==1.5.2
+statsmodels==0.14.4
+scipy==1.12.0
 fedot==0.7.4
 pandas==2.2.3
 PyYAML==6.0.2
