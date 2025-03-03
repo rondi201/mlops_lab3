@@ -27,13 +27,13 @@ class AvailableMetricsEnum(Enum):
     regression = (metric.value for metric in RegressionMetricsEnum)
 
 
-def train(
+def train_model(
         data_path: str | Path,
         task: Literal['classification', 'regression'],
         target_columns: str | list[str],
-        save_model_path: str | Path,
         index_col: str | None = None,
         timeout: float = 5,
+        task_id: str | None = None
 ):
     """
     Функция обучения моделей AutoML
@@ -42,9 +42,9 @@ def train(
         data_path (str | Path): Путь до .csv файла с данными
         task (str): Тип прогнозируемой задачи - 'classification' или 'regression'
         target_columns (str | list[str]): Целевые столбцы в данных, которые требуется предсказать
-        save_model_path (str | Path): Путь для сохранения весов моделей
         index_col (str, optional): Колонка индекса в базе данных (будет отброшена при обучении)
         timeout (str): Максимально допустимое время (в минутах) для поиска оптимального решения
+        task_id (str, optional): Имя задачи
 
     Returns:
         (dict[str, any]): Словарь с информацией о модели и её метриках
@@ -52,7 +52,7 @@ def train(
     available_tasks = set(metric.name for metric in TargetTrainMetricEnum)
     if task not in available_tasks:
         raise ValueError(f"'task' must be {available_tasks}, got {task}")
-    train_task_id = str(uuid.uuid4())[:8]
+    task_id = task_id or str(uuid.uuid4())[:8]
 
     # Выберем метрики
     target_metric = TargetTrainMetricEnum[task].value
@@ -70,7 +70,7 @@ def train(
              .build())
     # Обучим модель
     TRAIN_LOGGER.info(
-        f"<{train_task_id}> Start train model from '{data_path}' "
+        f"<{task_id}> Start train model from '{data_path}' "
         f"by {len(train_data.target)+len(test_data.target)} samples"
     )
     model.fit(features=train_data)
@@ -81,20 +81,12 @@ def train(
         metric_names=test_metrics
     )
     TRAIN_LOGGER.info(
-        f"<{train_task_id}> Finish train model "
+        f"<{task_id}> Finish train model "
         f"with pipeline {model.current_pipeline.graph_description} "
         f"and metrics {model_metrics}"
     )
-    # Сохраним модель
-    model.current_pipeline.save(save_model_path, create_subdir=False)
-    TRAIN_LOGGER.info(
-        f"<{train_task_id}> Successfully save train model to {save_model_path}"
-    )
 
-    return {
-        "pipeline": model.current_pipeline.graph_description,
-        "metrics": {name: float(m) for name, m in model_metrics.items()}
-    }
+    return model, model_metrics
 
 
 def compare_metrics(first: dict[str], second: dict[str]) -> bool:
@@ -110,6 +102,90 @@ def compare_metrics(first: dict[str], second: dict[str]) -> bool:
         return first['roc_auc'] > second['roc_auc']
     else:
         raise RuntimeError(f"Metrics dictionary must contain 'mse' or 'roc_auc'")
+
+
+def train(
+        data_path: str | Path,
+        task: Literal['classification', 'regression'],
+        target_columns: str | list[str],
+        save_model_path: str | Path,
+        index_col: str | None = None,
+        timeout: float = 5,
+        if_exist: Literal['best', 'last'] = 'best'
+):
+    """
+    Функция обучения моделей AutoML
+
+    Args:
+        data_path (str | Path): Путь до .csv файла с данными
+        task (str): Тип прогнозируемой задачи - 'classification' или 'regression'
+        target_columns (str | list[str]): Целевые столбцы в данных, которые требуется предсказать
+        save_model_path (str | Path): Путь для сохранения весов моделей
+        index_col (str, optional): Колонка индекса в базе данных (будет отброшена при обучении)
+        timeout (str): Максимально допустимое время (в минутах) для поиска оптимального решения
+        if_exist (str): Поведение при существовании модели в save_model_path:
+            - 'best': сохраняется лучшая;
+            - 'last': сохраняется более новая
+
+    Returns:
+        (dict[str, any]): Словарь с информацией о модели и её метриках
+    """
+    task_id = str(uuid.uuid4())[:8]
+    # Загрузим метрики старой модели (если есть)
+    old_metrics_path = Path(save_model_path, 'metrics.yaml')
+    old_metrics = None
+    if old_metrics_path.exists():
+        old_metrics = read_yaml(old_metrics_path)
+
+    # Обучим модель
+    model, new_metrics = train_model(
+        data_path=data_path,
+        task=task,
+        target_columns=target_columns,
+        index_col=index_col,
+        timeout=timeout,
+        task_id=task_id
+    )
+    # Избавимся от скаляров
+    new_metrics = {name: float(m) for name, m in new_metrics.items()}
+
+    # Сравним метрики
+    save_new_model_flag = True
+    if if_exist == 'best' and old_metrics is not None:
+        save_new_model_flag = compare_metrics(new_metrics, old_metrics)
+    # Сохраним модель
+    is_new_model_saving = False
+    is_old_model_exist = save_model_path.exists()
+    if save_new_model_flag:
+        # Сохраним модели
+        save_model_path.parent.mkdir(exist_ok=True, parents=True)
+        cashed_model_path = save_model_path.with_name("_" + save_model_path.name)
+        if is_old_model_exist:
+            shutil.move(save_model_path, cashed_model_path)
+        try:
+            # Сохраним модель
+            model.current_pipeline.save(save_model_path, create_subdir=False)
+            # Сохраним метрики
+            write_yaml(new_metrics, Path(save_model_path, 'metrics.yaml'))
+            is_new_model_saving = True
+            TRAIN_LOGGER.info(
+                f"<{task_id}> Successfully save train model to {save_model_path}"
+            )
+        except Exception as e:
+            if is_old_model_exist:
+                shutil.move(cashed_model_path, save_model_path)
+            TRAIN_LOGGER.info(
+                f"Save train model from to {save_model_path} aborted"
+            )
+            raise
+        finally:
+            shutil.rmtree(cashed_model_path, ignore_errors=True)
+
+    return {
+        "pipeline": model.current_pipeline.graph_description,
+        "metrics": new_metrics,
+        "save": is_new_model_saving
+    }
 
 
 def parse_opt():
@@ -139,39 +215,14 @@ if __name__ == "__main__":
     # Сформируем путь сохранения модели
     model_name = opt['save_name'] or f"{data_root.name}_{datetime.now().strftime('%d-%m-%Y_%H-%M-%S')}"
     save_model_path = Path(opt['save_dir'], model_name)
-    # Сформируем путь для временного сохранения модели
-    cashed_model_path = Path(opt['save_dir'], model_name + '_pipeline')
-    # Загрузим метрики старой модели
-    old_metrics_path = Path(save_model_path, 'metrics.yaml')
-    old_metrics = None
-    if old_metrics_path.exists():
-        old_metrics = read_yaml(old_metrics_path)
 
     # Обучим модель
     task = data_config['task']
-    try:
-        model_info = train(
-            data_path=data_path,
-            task=task,
-            target_columns=data_config['target_columns'],
-            index_col=data_config.get('index_col'),
-            save_model_path=cashed_model_path,
-            timeout=opt.get('timeout', 5)
-        )
-
-        # Сравним метрики
-        new_metrics = model_info['metrics']
-        save_new_model_flag = True
-        if old_metrics is not None:
-            save_new_model_flag = compare_metrics(new_metrics, old_metrics)
-        # Сохраним модель
-        if save_new_model_flag:
-            shutil.rmtree(save_model_path, ignore_errors=True)
-            shutil.move(cashed_model_path, save_model_path)
-            # Сохраним метрики
-            write_yaml(new_metrics, Path(save_model_path, 'metrics.yaml'))
-            TRAIN_LOGGER.info(
-                f"Resave train model from {cashed_model_path} to {save_model_path}"
-            )
-    finally:
-        shutil.rmtree(cashed_model_path, ignore_errors=True)
+    model_info = train(
+        data_path=data_path,
+        task=task,
+        target_columns=data_config['target_columns'],
+        index_col=data_config.get('index_col'),
+        save_model_path=save_model_path,
+        timeout=opt.get('timeout', 5)
+    )

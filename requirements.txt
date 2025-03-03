@@ -10,3 +10,6 @@ fastapi==0.115.9
 python-multipart==0.0.20
 uvicorn==0.34.0
 psutil==7.0.0
+
+# Tests
+coverage==7.6.12

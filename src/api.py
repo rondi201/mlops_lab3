@@ -11,6 +11,8 @@ from src.config import api_config
 
 app_logger = LoggerFactory.get_logger('APP')
 app = FastAPI(openapi_url="/api/v1/openapi.json")
+# Настроим API методы
+APIMethods.setting(**api_config)
 
 
 @app.api_route("/health", methods=['GET', 'HEAD'], tags=["health"])

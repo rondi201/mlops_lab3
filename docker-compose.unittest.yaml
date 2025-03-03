@@ -1,0 +1,10 @@
+services:
+  api:
+    # Сервис по сопоставлению СИЗ с людьми и нахождению нарушений в их ношении на основе данных от `human-info-detection-service`
+    build: .
+    image: rondi201/mlops-lab1-api:latest
+    command:
+      - coverage run -m unittest discover -s src/unit_tests -p '*_test.py'
+      - coverage report -mi
+    environment:
+      LOG_LEVEL: WARN

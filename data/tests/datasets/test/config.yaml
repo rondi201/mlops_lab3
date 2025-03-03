@@ -1,0 +1,4 @@
+train_dataset: train.csv
+task: regression
+index_col: ID
+target_columns: medv
