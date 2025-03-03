@@ -41,19 +41,35 @@ options {
                 }
             }
 
-        stage('Create and run docker container') {
+        stage('Build docker container') {
             steps {
                 script {
-                    try {
-                            sh 'cd ${REPO_NAME} && docker compose build'
-                        }
-
-                    finally {
-                            sh 'cd ${REPO_NAME} && docker compose up -d'
-                        }
-				    }
+                    dir("${REPO_NAME}") {
+                        sh 'docker compose build'
+                    }
                 }
             }
+        }
+
+        stage('Check unit tests') {
+            steps {
+                script {
+                    dir("${REPO_NAME}") {
+                        sh 'docker compose -f docker-compose.unittest.yaml up'
+                    }
+                }
+            }
+        }
+
+        stage('Run docker container') {
+            steps {
+                script {
+                    dir("${REPO_NAME}") {
+                        sh 'docker compose up -d'
+                    }
+                }
+            }
+        }
 
         stage('Check container healthy') {
             options {
