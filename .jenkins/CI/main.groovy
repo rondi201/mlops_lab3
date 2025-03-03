@@ -1,8 +1,11 @@
 pipeline {
     agent any
-
+    parameters {
+        string(name: "dvc_minio_url", defaultValue: "http://172.30.128.1:9000", trim: true, description: "Путь для доступа к S3 Minio Storage для загрузки данных из DVC")
+    }
     environment {
         DOCKERHUB_CREDS=credentials('mlops_lab')
+        DVC_MINIO_CREDS=credentials('dvc_minio')
         REPO_NAME='mlops_lab1'
         PROJECT_NAME='mlops-lab1'
     }
@@ -19,6 +22,18 @@ options {
                     sh 'whoami'
 				}
 			}
+
+        stage('Get data files') {
+            steps {
+                dir("${REPO_NAME}") {
+                    sh "dvc remote modify --local minio endpointurl ${params.dvc_minio_url}"
+                    sh 'dvc remote modify --local minio access_key_id "${DVC_MINIO_CREDS_USR}"'
+                    sh 'dvc remote modify --local minio secret_access_key "${DVC_MINIO_CREDS_PSW}"'
+                    sh 'dvc pull'
+                    sh 'tree . --filelimit 50'
+                }
+            }
+        }
 
         stage('Login'){
             steps{
