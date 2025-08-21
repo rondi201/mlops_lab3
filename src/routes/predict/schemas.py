@@ -3,13 +3,6 @@ from pydantic import BaseModel, Field
 from ..mlmodels.schemas import BaseMLModel
 
 
-class PredictInput(BaseModel):
-    """Входные данные для предсказания"""
-
-    mlmodel_id: int = Field(description="Идентификатор ML модели", examples=[8])
-    """ Идентификатор ML модели """
-
-
 class PredictOutput(BaseModel):
     """Выходные данные от предсказания"""
 

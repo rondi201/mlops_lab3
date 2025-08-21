@@ -2,13 +2,13 @@ import datetime
 from logging import Logger
 from typing import Annotated
 
-from fastapi import Depends, File, UploadFile
+from fastapi import Depends, File, Path, UploadFile
 from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
 
-from .schemas import PredictInput, PredictOutput
+from .schemas import PredictOutput
 from .service import PredictService
 from ... import dependencies
 from ...database.models import MLModel
@@ -36,7 +36,9 @@ DependLogger = Annotated[Logger, Depends(dependencies.get_app_logger)]
 )
 async def get_model_prediction_route(
     db_repository: DependDatabaseRepository,
-    predict_input: PredictInput,
+    mlmodel_id: Annotated[
+        int, Path(description="Идентификатор ML модели", examples=[8])
+    ],
     data_file: UploadFile = File(
         description="Файл формата .csv, содержащий столбцы признаков из обучающего набора данных."
     ),
@@ -46,15 +48,13 @@ async def get_model_prediction_route(
     """
     # Загрузим сущность модели вместе с набором данных
     ml_model = await db_repository.for_model(MLModel).get(
-        predict_input.mlmodel_id, with_relationships=[MLModel.dataset]
+        mlmodel_id, with_relationships=[MLModel.dataset]
     )
     # Если сущность не найдена
     if ml_model is None:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={
-                "message": "ML model with id {predict_input.mlmodel_id} not found."
-            },
+            content={"message": "ML model with id {mlmodel_id} not found."},
         )
     # Загрузим данные
     try:

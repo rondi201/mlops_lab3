@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Path
 from fastapi import status
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
@@ -36,7 +36,12 @@ async def get_all_mlmodels_route(db_repository: DependDatabaseRepository):
         }
     },
 )
-async def get_mlmodel_route(mlmodel_id: int, db_repository: DependDatabaseRepository):
+async def get_mlmodel_route(
+    mlmodel_id: Annotated[
+        int, Path(description="Идентификатор ML модели", examples=[8])
+    ],
+    db_repository: DependDatabaseRepository,
+):
     """Получение информации о конкретном наборе данных"""
     result = await db_repository.for_model(MLModel).get(mlmodel_id)
     if result is None:

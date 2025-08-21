@@ -10,6 +10,11 @@ from .tasks.router import router as tasks_router
 
 router = APIRouter()
 
+# Добавим вложенные маршруты
+mlmodel_router.include_router(
+    predict_router, prefix="/{mlmodel_id}" + f"{config_manager.api_config.predict}"
+)
+
 # Добавим основные маршруты
 router.include_router(
     health_route, prefix=config_manager.api_config.health, tags=["Health"]
@@ -21,12 +26,5 @@ router.include_router(
     mlmodel_router, prefix=config_manager.api_config.mlmodels, tags=["MLModels"]
 )
 router.include_router(
-    predict_router, prefix=config_manager.api_config.predict, tags=["Predict"]
-)
-router.include_router(
     tasks_router, prefix=config_manager.api_config.tasks, tags=["Tasks"]
 )
-
-
-# Добавим вложенные маршруты
-mlmodel_router.include_router(predict_router, prefix="/{mlmodel_id}")
