@@ -25,7 +25,9 @@ class StorageConfig(BaseModel):
 class SeedingConfig(BaseModel):
     """Настройки автозаполнения базы данных"""
 
-    predict_tasks_seeding_config: str = "data/seed_data/predict_task.json"
+    predict_tasks_seeding_config: str = "data/seed_data/predict_tasks.json"
+    datasets_seeding_config: str = "data/seed_data/datasets.json"
+    mlmodels_seeding_config: str = "data/seed_data/mlmodels.json"
 
 
 class ApiPrefixConfig(BaseModel):

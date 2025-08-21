@@ -1,0 +1,10 @@
+{
+    "data": [
+        {
+            "name": "boston-housing",
+            "task_name": "regression",
+            "target_column": "medv",
+            "index_column": "ID"
+        }
+    ]
+}

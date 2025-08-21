@@ -46,12 +46,12 @@ class ModelRepository(Generic[Model]):
     def _get_instance_from_data(self, data: dict | Model) -> Model:
         """Получение объекта модели из различных источников"""
         if isinstance(data, models.Base):
-            if isinstance(data, type(self.model)):
+            if isinstance(data, self.model):
                 return data
             else:
                 raise ValueError(
-                    f"Given model entity in data must be instance of {self.model.__class__.__name__}, \
-                          got instance of {type(data).__class__.__name__}"
+                    f"Given model entity in data must be instance of {self.model.__class__.__name__}"
+                    f"got instance of {type(data).__class__.__name__}"
                 )
         return self.model(**data)
 

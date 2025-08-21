@@ -1,0 +1,12 @@
+{
+  "data": [
+    {
+      "id": 0,
+      "name": "classification"
+    },
+    {
+      "id": 1,
+      "name": "regression"
+    }
+  ]
+}
