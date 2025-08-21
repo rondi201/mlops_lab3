@@ -18,6 +18,10 @@ class MLModelInfo(BaseMLModel):
     Информация о ML модели.
     """
 
+    title: str = Field(description="Человекочитаемое название ML модели")
+    """ Человекочитаемое название ML модели """
+    description: str = Field(description="Человекочитаемое описание ML модели")
+    """ Человекочитаемое описание ML модели """
     dataset_id: int = Field(
         description="Идентификатор набора данных, на котором обучалась модель",
         examples=[12],

@@ -16,5 +16,5 @@ class PredictTask(Base):
     """ Идентификатор задачи """
     name: Mapped[str] = mapped_column(String(50))
     """ Системное название задачи """
-    # title: Mapped[str] = mapped_column(String(128))
-    # """ Человекочитаемое название метрики """
+    title: Mapped[str] = mapped_column(String(128), default="Untitled")
+    """ Человекочитаемое название метрики """

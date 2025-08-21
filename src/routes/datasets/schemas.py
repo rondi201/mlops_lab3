@@ -17,6 +17,10 @@ class DatasetInfo(BaseDataset):
     Информация о наборе данных.
     """
 
+    title: str = Field(description="Человекочитаемое название набора данных")
+    """ Человекочитаемое название набора данных """
+    description: str = Field(description="Человекочитаемое описание набора данных")
+    """ Человекочитаемое описание набора данных """
     target_column: str = Field(
         description="Название целевой колонки", examples=["target"]
     )

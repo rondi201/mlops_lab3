@@ -21,10 +21,10 @@ class MLModel(Base):
     """ Идентификатор модели """
     name: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     """ Системное название модели """
-    # title: Mapped[str] = mapped_column(String(128))
-    # """ Человекочитаемое название модели """
-    # description: Mapped[str] = mapped_column(String(512))
-    # """ Человекочитаемое описание модели """
+    title: Mapped[str] = mapped_column(String(128), default="Untitled")
+    """ Человекочитаемое название модели """
+    description: Mapped[str] = mapped_column(String(512), default="")
+    """ Человекочитаемое описание модели """
     dataset_id: Mapped[int] = mapped_column(
         ForeignKey("datasets.id", ondelete="CASCADE")
     )

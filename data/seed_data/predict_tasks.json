@@ -2,11 +2,13 @@
   "data": [
     {
       "id": 0,
-      "name": "classification"
+      "name": "classification",
+      "title": "Классификация"
     },
     {
       "id": 1,
-      "name": "regression"
+      "name": "regression",
+      "title": "Регрессия"
     }
   ]
 }

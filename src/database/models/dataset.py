@@ -20,10 +20,10 @@ class Dataset(Base):
     """ Идентификатор набора данных """
     name: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     """ Системное название набора данных """
-    # title: Mapped[str] = mapped_column(String(128))
-    # """ Человекочитаемое название набора данных """
-    # description: Mapped[str] = mapped_column(String(512))
-    # """ Человекочитаемое описание набора данных """
+    title: Mapped[str] = mapped_column(String(128), default="Untitled")
+    """ Человекочитаемое название набора данных """
+    description: Mapped[str] = mapped_column(String(512), default="")
+    """ Человекочитаемое описание набора данных """
     task_id: Mapped[int] = mapped_column(ForeignKey("predict_tasks.id"))
     """ Идентификатор задачи """
     target_column: Mapped[str] = mapped_column(String(50))
