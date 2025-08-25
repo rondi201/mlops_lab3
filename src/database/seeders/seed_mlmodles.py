@@ -1,12 +1,14 @@
 import datetime
 import json
 from os import PathLike
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import Dataset, MLModel
 from src.database.repository import ModelRepository
+from src.config import config_manager
 
 
 async def seed_mlmodels(config_path: str | PathLike, session: AsyncSession):
@@ -21,6 +23,18 @@ async def seed_mlmodels(config_path: str | PathLike, session: AsyncSession):
     # Загрузим конфигурацию заполнения из файла
     with open(config_path) as file:
         config: dict[str, Any] = json.load(file)
+
+    # Проверим наличие данных для переданных сущностей
+    for row in config["data"]:
+        # Получим путь до сохранённой модели
+        weights_root = config_manager.storage_config.weights_root
+        name = row["name"]
+        model_path = Path(weights_root, name)
+        # Проверим, что он существует
+        if not model_path.exists():
+            raise RuntimeError(
+                f"No found weights for mlmodel with name '{name}' by path '{model_path}'"
+            )
 
     # Преобразуем данные в нужные типы
     for field_name, deserializer in (("trained_at", datetime.datetime.fromisoformat),):

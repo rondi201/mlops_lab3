@@ -47,6 +47,7 @@ class AutoMLTrainer:
         index_col: str | None = None,
         timeout: float = 5,
         task_id: str | None = None,
+        composition_preset: str | None = None,
     ):
         """
         Функция обучения моделей AutoML
@@ -56,8 +57,15 @@ class AutoMLTrainer:
             task (str): Тип прогнозируемой задачи - 'classification' или 'regression'
             target_columns (str | list[str | int]): Целевые столбцы в данных, которые требуется предсказать
             index_col (str, optional): Колонка индекса в базе данных (будет отброшена при обучении)
-            timeout (str): Максимально допустимое время (в минутах) для поиска оптимального решения
+            timeout (float): Максимально допустимое время (в минутах) для поиска оптимального решения
             task_id (str, optional): Имя задачи
+            composition_preset (str, optional): Параметр выбора моделей для подбора решения, Может быть один из:
+                - ``best_quality`` -> Используются все модели, доступные для данного типа данных и задачи
+                - ``fast_train`` -> Модели, которые быстро обучаются. Это включает в себя операции предварительной обработки
+                    (data operations) это только уменьшает размерность данных, но не может увеличить ее.
+                    Например, нет полиномиальных функций и операций one-hot кодирования
+                - ``stable`` -> Самая надежная предустановка, в которую включены наиболее стабильные операции
+                - ``auto`` (По умолчанию) -> Автоматически определяет, какой пресет следует использовать
 
         Returns:
             (dict[str, any]): Словарь с информацией о модели и её метриках
@@ -79,7 +87,9 @@ class AutoMLTrainer:
         # Создадим модель
         model = (
             FedotBuilder(problem=task)
-            .setup_composition(timeout=timeout, preset="auto", with_tuning=True)
+            .setup_composition(
+                timeout=timeout, preset=composition_preset or "auto", with_tuning=True
+            )
             .setup_pipeline_evaluation(metric=target_metric, cv_folds=3)
             .setup_data_preprocessing(use_auto_preprocessing=True)
             .setup_output(
@@ -129,6 +139,7 @@ class AutoMLTrainer:
         index_col: str | None = None,
         timeout: float = 5,
         if_exist: Literal["best", "last"] = "best",
+        composition_preset: str | None = None,
     ):
         """
         Функция обучения моделей AutoML
@@ -143,6 +154,13 @@ class AutoMLTrainer:
             if_exist (str): Поведение при существовании модели в save_model_path:
                 - 'best': сохраняется лучшая;
                 - 'last': сохраняется более новая
+            composition_preset (str, optional): Параметр выбора моделей для подбора решения, Может быть один из:
+                - ``best_quality`` -> Используются все модели, доступные для данного типа данных и задачи
+                - ``fast_train`` -> Модели, которые быстро обучаются. Это включает в себя операции предварительной обработки
+                    (data operations) это только уменьшает размерность данных, но не может увеличить ее.
+                    Например, нет полиномиальных функций и операций one-hot кодирования
+                - ``stable`` -> Самая надежная предустановка, в которую включены наиболее стабильные операции
+                - ``auto`` (По умолчанию) -> Автоматически определяет, какой пресет следует использовать
 
         Returns:
             (dict[str, any]): Словарь с информацией о модели и её метриках
@@ -163,6 +181,7 @@ class AutoMLTrainer:
             index_col=index_col,
             timeout=timeout,
             task_id=task_id,
+            composition_preset=composition_preset,
         )
         # Избавимся от скаляров
         new_metrics = {name: float(m) for name, m in new_metrics.items()}
@@ -219,6 +238,20 @@ def parse_opt():
         default=5,
     )
     parser.add_argument(
+        "-p",
+        "--preset",
+        dest="composition_preset",
+        type=str,
+        help="The model selection parameter for selecting a solution can be one of: "
+        "   - ``best_quality`` -> All models that are available for this data type and task are used"
+        "   - ``fast_train`` -> Models that learn quickly. This includes preprocessing operations"
+        "          (data operations) that only reduce the dimensionality of the data, but cannot increase it."
+        "          For example, there are no polynomial features and one-hot encoding operations"
+        "   - ``stable`` -> The most reliable preset in which the most stable operations are included"
+        "   - ``auto`` (Default) -> Automatically determine which preset should be used",
+        default="runs",
+    )
+    parser.add_argument(
         "--save-dir",
         type=str,
         help="save result model weights root dir",
@@ -260,4 +293,5 @@ if __name__ == "__main__":
         index_col=data_config.get("index_col"),
         save_model_path=save_model_path,
         timeout=opt.get("timeout", 5),
+        composition_preset=opt.get("composition_preset"),
     )

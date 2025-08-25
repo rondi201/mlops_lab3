@@ -22,12 +22,12 @@ async def lifespan(fastapi_app: FastAPI):
             await DatabaseRepository(session).ping()
         # Заполним базу данных начальными значениями
         sc = config_manager.seeding_config
-        for seeder, config_path in (
-            (seed_predict_tasks, sc.predict_tasks_seeding_config),
-            (seed_datasets, sc.datasets_seeding_config),
-            (seed_mlmodels, sc.mlmodels_seeding_config),
-        ):
-            async with dependencies.get_database_session_builder().get_async_session() as session:
+        async with dependencies.get_database_session_builder().get_async_session() as session:
+            for seeder, config_path in (
+                (seed_predict_tasks, sc.predict_tasks_seeding_config),
+                (seed_datasets, sc.datasets_seeding_config),
+                (seed_mlmodels, sc.mlmodels_seeding_config),
+            ):
                 await seeder(config_path, session=session)
         yield
     finally:

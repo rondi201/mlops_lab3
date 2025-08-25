@@ -1,11 +1,13 @@
 import json
 from os import PathLike
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import Dataset, PredictTask
 from src.database.repository import ModelRepository
+from src.config import config_manager
 
 
 async def seed_datasets(config_path: str | PathLike, session: AsyncSession):
@@ -20,6 +22,18 @@ async def seed_datasets(config_path: str | PathLike, session: AsyncSession):
     # Загрузим конфигурацию заполнения из файла
     with open(config_path) as file:
         config: dict[str, Any] = json.load(file)
+
+    # Проверим наличие данных для переданных сущностей
+    for row in config["data"]:
+        # Получим путь до файлов набора данных
+        datasets_root = config_manager.storage_config.datasets_root
+        name = row["name"]
+        dataset_path = Path(datasets_root, name)
+        # Проверим, что он существует
+        if not dataset_path.exists():
+            raise RuntimeError(
+                f"No found weights for mlmodel with name '{name}' by path '{dataset_path}'"
+            )
 
     # Получим данные для вставки
     source_models = [

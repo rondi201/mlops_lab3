@@ -40,12 +40,11 @@ async def get_all_datasets_route(db_repository: DependDatabaseRepository):
         }
     },
 )
-# Т.к. получения результата занимает много времени - откажемся от async в пользу запуска в отдельном tread
-def get_dataset_route(task_id: int, db_repository: DependDatabaseRepository):
+async def get_dataset_route(task_id: int, db_repository: DependDatabaseRepository):
     """Получение информации о конкретном типе задачи"""
     model_feature = db_repository.for_model(PredictTask).get(task_id)
     # Запускаем асинхронную функцию в синхронном коде
-    result = asyncio.new_event_loop().run_until_complete(model_feature)
+    result = await model_feature
     if result is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
