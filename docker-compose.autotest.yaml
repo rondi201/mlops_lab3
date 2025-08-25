@@ -1,0 +1,40 @@
+services:
+  api-autotest:
+    # Настроим API приложение для запуска pytest'ов
+    image: rondi201/mlops-lab2-api:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: >
+      /bin/sh -c '
+        alembic upgrade head
+        pytest --cov=src -v 
+      '
+    environment:
+      LOG_LEVEL: INFO
+      # Прокинем изменения конфигурации с помощью .env файла
+      APP_ENV_FILE: .env.autotest
+      APP_DB__HOST: postgres-autotest
+      APP_DB__PORT: 5432
+      APP_DB__USER: test_user
+      APP_DB__PASSWORD: test_password
+      APP_DB__DIALECT: ${DB_DIALECT:-postgresql+asyncpg}
+      APP_DB__DATABASE: autotest
+    depends_on:
+      postgres-autotest:
+        condition: service_healthy
+
+  postgres-autotest:
+    # Сервис базы данных PostgreSQL
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: autotest
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    expose:
+      - 5432
+    healthcheck:
+      test: pg_isready -U test_user -d autotest
+      interval: 3s
+      timeout: 3s
+      retries: 3

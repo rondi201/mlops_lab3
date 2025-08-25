@@ -24,7 +24,8 @@ services:
       APP_DB__DIALECT: ${DB_DIALECT:-postgresql+asyncpg}
       APP_DB__DATABASE: ${DB_DATABASE:-ml-app}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   postgres:
     # Сервис базы данных PostgreSQL

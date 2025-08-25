@@ -1,0 +1,12 @@
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "test_2025-08-22_18-33-47",
+            "dataset_name": "test",
+            "title": "Fast-trained Boston Housing regressor",
+            "description": "Модель, обученная на датасете Boston Housing для тестового использования.",
+            "trained_at": "2025-08-22 18:33:47"
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+mae: 0.773
+mape: 0.04
+mse: 1.281
+neg_mean_squared_log_error: 0.003
+r2: 0.901
+rmse: 1.132
+rmse_pen: 1.143
+smape: 22.489
