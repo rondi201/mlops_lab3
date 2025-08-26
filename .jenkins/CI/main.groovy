@@ -24,10 +24,10 @@ pipeline {
         stage('Checkout repo dir') {
             steps {
                     // Склонируем репозиторий и перейдём в него
-                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git && cd ${REPO_NAME}'
+                    sh "git clone https://github.com/rondi201/${REPO_NAME}.git"
                     // Сменим ветку на текущую (доступно при создании multibranch pipeline)
-                    sh "git checkout ${env.BRANCH_NAME}"
-                    sh 'ls -lash'
+                    sh "cd ${REPO_NAME} && git checkout ${env.BRANCH_NAME}"
+                    sh "cd ${REPO_NAME} && ls -lash"
                     sh 'whoami'
             }
         }
