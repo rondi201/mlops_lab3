@@ -3,8 +3,9 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDS=credentials('mlops_lab')
-        REPO_NAME='mlops_lab1'
-        PROJECT_NAME='mlops_lab1'
+        DB_CREDS = credentials('mlops_lab_database')
+        REPO_NAME='mlops_lab2'
+        PROJECT_NAME='mlops_lab2'
     }
 
 options {
@@ -38,7 +39,9 @@ options {
         stage('Run services'){
             steps{
                 dir("${REPO_NAME}") {
-                    sh 'docker compose up -d'
+                    sh 'docker compose up -d \
+                        -e DB_USER=${DB_CREDS_USR} \
+                        -e DB_PASSWORD=${DB_CREDS_PSW}'
                 }
             }
         }

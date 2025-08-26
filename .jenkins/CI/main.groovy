@@ -1,29 +1,38 @@
 pipeline {
     agent any
     parameters {
-        string(name: "dvc_minio_url", defaultValue: "http://172.30.128.1:9000", trim: true, description: "Путь для доступа к S3 Minio Storage для загрузки данных из DVC")
+        string(
+            name: 'dvc_minio_url',
+            defaultValue: 'http://172.17.0.1:9000',
+            trim: true,
+            description: 'Путь для доступа к S3 Minio Storage для загрузки данных из DVC'
+        )
     }
     environment {
-        DOCKERHUB_CREDS=credentials('mlops_lab')
-        DVC_MINIO_CREDS=credentials('dvc_minio')
-        REPO_NAME='mlops_lab1'
-        PROJECT_NAME='mlops-lab1'
+        DOCKERHUB_CREDS = credentials('dockerhub')
+        DVC_MINIO_CREDS = credentials('dvc_minio')
+        DB_CREDS = credentials('mlops_lab_database')
+        REPO_NAME = 'mlops_lab2'
+        PROJECT_NAME = 'mlops-lab2'
     }
 
-options {
+    options {
         timestamps()
         skipDefaultCheckout(true)
-	}
+    }
     stages {
         stage('Checkout repo dir') {
             steps {
-                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git'
-                    sh 'cd ${REPO_NAME} && ls -lash'
+                    // Склонируем репозиторий и перейдём в него
+                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git && cd ${REPO_NAME}'
+                    // Сменим ветку на текущую (доступно при создании multibranch pipeline)
+                    sh "git checkout ${env.BRANCH_NAME}"
+                    sh 'ls -lash'
                     sh 'whoami'
-				}
-			}
+            }
+        }
 
-        stage('Get data files') {
+        stage('Get data files from DVC') {
             steps {
                 dir("${REPO_NAME}") {
                     sh "dvc remote modify --local minio endpointurl ${params.dvc_minio_url}"
@@ -35,11 +44,11 @@ options {
             }
         }
 
-        stage('Login'){
-            steps{
+        stage('Login') {
+            steps {
                     sh 'docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}'
-                }
             }
+        }
 
         stage('Build docker container') {
             steps {
@@ -51,11 +60,16 @@ options {
             }
         }
 
-        stage('Check unit tests') {
+        stage('Check auto tests') {
             steps {
                 script {
                     dir("${REPO_NAME}") {
-                        sh 'docker compose -f docker-compose.unittest.yaml up'
+                        // Поднимем контейнеры для автотестов и завершим работу после их прохождения
+                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest up \
+                            --abort-on-container-exit \
+                            --exit-code-from api-autotest'
+                        // удалим контейнеры автотестов
+                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
                     }
                 }
             }
@@ -65,7 +79,9 @@ options {
             steps {
                 script {
                     dir("${REPO_NAME}") {
-                        sh 'docker compose up -d'
+                        sh 'docker compose up -d \
+                            -e DB_USER=${DB_CREDS_USR} \
+                            -e DB_PASSWORD=${DB_CREDS_PSW}'
                     }
                 }
             }
@@ -103,28 +119,32 @@ options {
                                 '''
                             }
                         }
-                        catch (err) {}
+                        catch (err) { }
                     }
                 }
             }
         }
 
-        stage('Checkout coverage report'){
-            steps{
-                dir("${REPO_NAME}"){
-                        sh '''
-                        docker compose logs -t --tail 10
-                        '''
-                }
-            }
-        }
+        // stage('Checkout coverage report'){
+        //     steps{
+        //         dir("${REPO_NAME}"){
+        //                 sh '''
+        //                 docker compose logs -t --tail 25
+        //                 '''
+        //         }
+        //     }
+        // }
 
-        stage('Push'){
-            steps{
+        stage('Push') {
+            // Отправим образ только при сборке release версии из ветки master
+            when{
+                branch master
+            }
+            steps {
                     sh 'docker push ${DOCKERHUB_CREDS_USR}/${PROJECT_NAME}-api:latest'
             }
         }
-	}
+    }
 
     post {
         always {
