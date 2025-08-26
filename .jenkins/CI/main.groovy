@@ -14,6 +14,11 @@ pipeline {
         DB_CREDS = credentials('mlops_lab_database')
         REPO_NAME = 'mlops_lab2'
         PROJECT_NAME = 'mlops-lab2'
+        // Настройки внутри docker-container
+        // Префикс в собираемых образах docker (если не master ветка - добавим префикс для исключения перезаписи образов)
+        IMAGE_PREFIX = "${env.BRANCH_NAME == 'master' ? '' : env.BRANCH_NAME}"
+        // Зададим COMPOSE_PROJECT_NAME в зависимости от ветки, чтобы контейнеры не пересекались внутри агента
+        COMPOSE_PROJECT_NAME = "${PROJECT_NAME}_${env.BRANCH_NAME}"
     }
 
     options {
@@ -148,6 +153,7 @@ pipeline {
 
     post {
         always {
+                // Выйдем из docker
                 sh 'docker logout'
                 script {
                     if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
