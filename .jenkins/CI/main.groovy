@@ -118,7 +118,7 @@ pipeline {
         stage('Push') {
             // Отправим образ только при сборке release версии из ветки master
             when{
-                branch master
+                branch 'master'
             }
             steps {
                     sh 'docker push ${DOCKERHUB_CREDS_USR}/${PROJECT_NAME}-api:latest'
