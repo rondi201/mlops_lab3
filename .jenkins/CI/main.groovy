@@ -90,25 +90,10 @@ pipeline {
                                 passwordVariable: 'DB_PASSWORD'
                             )
                         ]) {
-                            sh 'docker compose up -d'
+                            // Запустим сборку и дождёмся, пока все контейнеры не будут здоровы (макс. 180 секунд)
+                            sh 'docker compose up -d --wait --wait-timeout 180'
                         }
                     }
-                }
-            }
-        }
-
-        stage('Check container healthy') {
-            options {
-                timeout(time: 180, unit: 'SECONDS')
-            }
-            steps {
-                dir("${REPO_NAME}") {
-                    sh '''
-                        containerId=$(docker ps -qf "name=^${PROJECT_NAME}-api")
-                        until [ "`docker inspect -f {{.State.Health.Status}} $containerId`"=="healthy" ]; do
-                            sleep 0.1;
-                        done;
-                    '''
                 }
             }
         }
@@ -120,7 +105,7 @@ pipeline {
                         try {
                             timeout(time: 30, unit: 'SECONDS') {
                                 sh '''
-                                    containerId=$(docker ps -qf "name=^${PROJECT_NAME}-api")
+                                    containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
                                     if [[ -z "$containerId" ]]; then
                                         echo "No container running"
                                     else
