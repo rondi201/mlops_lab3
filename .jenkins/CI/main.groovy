@@ -98,23 +98,18 @@ pipeline {
             }
         }
 
-        stage('Checkout container logs') {
+        stage('Check container logs') {
             steps {
                 dir("${REPO_NAME}") {
                     script {
-                        try {
-                            timeout(time: 30, unit: 'SECONDS') {
-                                sh '''
-                                    containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
-                                    if [[ -z "$containerId" ]]; then
-                                        echo "No container running"
-                                    else
-                                        docker logs --tail 100 -f "$containerId"
-                                    fi
-                                '''
-                            }
-                        }
-                        catch (err) { }
+                        sh '''
+                            containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
+                            if [[ -z "$containerId" ]]; then
+                                echo "No container running"
+                            else
+                                docker logs --tail 100 "$containerId"
+                            fi
+                        '''
                     }
                 }
             }
