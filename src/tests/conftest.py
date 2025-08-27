@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 # Имортируем главное FastAPI приложение
 from src.api import app
+from src.utils import read_yaml
 
 
 @pytest.fixture(scope="session")
@@ -28,10 +29,9 @@ def correct_predict_input_data() -> Generator[BinaryIO, None, None]:
 @pytest.fixture
 def correct_predict_output_predictions() -> dict[str, Any]:
     """Получение правильного выхода предсказания на тестовый вход из `correct_predict_input_data`"""
-    with open(
-        "data/tests/weights/test_2025-08-22_18-33-47/output_test_prediction.json"
-    ) as file:
-        output = json.load(file)
+    output = read_yaml(
+        "data/tests/weights/test_2025-08-22_18-33-47/output_test_prediction.yaml"
+    )
 
     return output["predictions"]
 

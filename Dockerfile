@@ -4,6 +4,12 @@ ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update && \
     apt-get install -y \
+    # Для работы ML моделей
+    build-essential \
+    libsm6 \
+    libxext6 \
+    libglib2.0-0 \
+    # Для health-check
     curl
 
 COPY requirements.txt requirements.txt
