@@ -130,16 +130,6 @@ pipeline {
             }
         }
 
-        // stage('Checkout coverage report'){
-        //     steps{
-        //         dir("${REPO_NAME}"){
-        //                 sh '''
-        //                 docker compose logs -t --tail 25
-        //                 '''
-        //         }
-        //     }
-        // }
-
         stage('Push') {
             // Отправим образ только при сборке release версии из ветки master
             when{
@@ -157,7 +147,12 @@ pipeline {
                 sh 'docker logout'
                 script {
                     if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
-                        sh 'cd ${REPO_NAME} && docker compose down -v'
+                        dir("${REPO_NAME}") {
+                            // Остановим основную сборку
+                            sh 'docker compose down -v'
+                            // Остановим сборку автотестов
+                            sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
+                        }
                     }
                 }
                 cleanWs()
