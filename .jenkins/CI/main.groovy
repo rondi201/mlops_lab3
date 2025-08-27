@@ -11,7 +11,6 @@ pipeline {
     environment {
         DOCKERHUB_CREDS = credentials('dockerhub')
         DVC_MINIO_CREDS = credentials('dvc_minio')
-        DB_CREDS = credentials('mlops_lab_database')
         REPO_NAME = 'mlops_lab2'
         PROJECT_NAME = 'mlops-lab2'
         // Настройки внутри docker-container
@@ -84,9 +83,15 @@ pipeline {
             steps {
                 script {
                     dir("${REPO_NAME}") {
-                        sh 'docker compose up -d \
-                            -e DB_USER=${DB_CREDS_USR} \
-                            -e DB_PASSWORD=${DB_CREDS_PSW}'
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'mlops_lab_database', 
+                                usernameVariable: 'DB_USER',
+                                passwordVariable: 'DB_PASSWORD'
+                            )
+                        ]) {
+                            sh 'docker compose up -d'
+                        }
                     }
                 }
             }

@@ -39,9 +39,15 @@ options {
         stage('Run services'){
             steps{
                 dir("${REPO_NAME}") {
-                    sh 'docker compose up -d \
-                        -e DB_USER=${DB_CREDS_USR} \
-                        -e DB_PASSWORD=${DB_CREDS_PSW}'
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'mlops_lab_database', 
+                            usernameVariable: 'DB_USER',
+                            passwordVariable: 'DB_PASSWORD'
+                        )
+                    ]) {
+                        sh 'docker compose up -d'
+                    }
                 }
             }
         }
