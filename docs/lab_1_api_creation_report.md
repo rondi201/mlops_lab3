@@ -147,15 +147,18 @@ Jenkins. Данные скрипты хранятся в [.jenkins](../.jenkins)
 
 ## Extra. Настройка удалённой WSL машины
 
-Настройка окружения
+В качестве образа используется Ubuntu 24.04 совместно с WSL 2.
+
+Настройка окружения на
 ```shell
-sudo apt install curl software-properties-common ca-certificates apt-transport-http
-sudo apt install tree
+sudo apt update 
+sudo apt install -y curl software-properties-common ca-certificates apt-transport-http tree
 ```
+(при возникновении ошибки установки `apt-transport-http` можно воспользоваться `apt-get`: `sudo apt-get -y install apt-transport-https`)
 
 Java машина для Jenkins agent
 ```shell
-sudo apt install fontconfig openjdk-17-jre
+sudo apt install -y fontconfig openjdk-17-jre
 ```
 
 Установка Docker https://timeweb.cloud/tutorials/docker/kak-ustanovit-docker-na-ubuntu-22-04```shell
@@ -177,8 +180,8 @@ sudo usermod -aG docker jenkins-agent
 Настроим SSH
 ```shell
 ...  # Добавление ключа ssh в /home/jenkins-agent/.ssh
+sudo apt install ufw openssh-server
 sudo ufw enable 
-sudo apt install openssh-server
 service ssh start
 sudo ufw allow ssh  # Разрешаем доступ для брандмауэра
 ```

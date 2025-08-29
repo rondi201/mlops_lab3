@@ -1,29 +1,42 @@
 pipeline {
     agent any
     parameters {
-        string(name: "dvc_minio_url", defaultValue: "http://172.30.128.1:9000", trim: true, description: "Путь для доступа к S3 Minio Storage для загрузки данных из DVC")
+        string(
+            name: 'dvc_minio_url',
+            defaultValue: 'http://172.17.0.1:9000',
+            trim: true,
+            description: 'Путь для доступа к S3 Minio Storage для загрузки данных из DVC'
+        )
     }
     environment {
-        DOCKERHUB_CREDS=credentials('mlops_lab')
-        DVC_MINIO_CREDS=credentials('dvc_minio')
-        REPO_NAME='mlops_lab1'
-        PROJECT_NAME='mlops-lab1'
+        DOCKERHUB_CREDS = credentials('dockerhub')
+        DVC_MINIO_CREDS = credentials('dvc_minio')
+        REPO_NAME = 'mlops_lab2'
+        PROJECT_NAME = 'mlops-lab2'
+        // Настройки внутри docker-container
+        // Префикс в собираемых образах docker (если не master ветка - добавим префикс для исключения перезаписи образов)
+        IMAGE_PREFIX = "${env.BRANCH_NAME == 'master' ? '' : env.BRANCH_NAME}"
+        // Зададим COMPOSE_PROJECT_NAME в зависимости от ветки, чтобы контейнеры не пересекались внутри агента
+        COMPOSE_PROJECT_NAME = "${PROJECT_NAME}_${env.BRANCH_NAME}"
     }
 
-options {
+    options {
         timestamps()
         skipDefaultCheckout(true)
-	}
+    }
     stages {
         stage('Checkout repo dir') {
             steps {
-                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git'
-                    sh 'cd ${REPO_NAME} && ls -lash'
+                    // Склонируем репозиторий и перейдём в него
+                    sh "git clone https://github.com/rondi201/${REPO_NAME}.git"
+                    // Сменим ветку на текущую (доступно при создании multibranch pipeline)
+                    sh "cd ${REPO_NAME} && git checkout ${env.BRANCH_NAME}"
+                    sh "cd ${REPO_NAME} && ls -lash"
                     sh 'whoami'
-				}
-			}
+            }
+        }
 
-        stage('Get data files') {
+        stage('Get data files from DVC') {
             steps {
                 dir("${REPO_NAME}") {
                     sh "dvc remote modify --local minio endpointurl ${params.dvc_minio_url}"
@@ -35,11 +48,11 @@ options {
             }
         }
 
-        stage('Login'){
-            steps{
+        stage('Login') {
+            steps {
                     sh 'docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}'
-                }
             }
+        }
 
         stage('Build docker container') {
             steps {
@@ -51,11 +64,16 @@ options {
             }
         }
 
-        stage('Check unit tests') {
+        stage('Check auto tests') {
             steps {
                 script {
                     dir("${REPO_NAME}") {
-                        sh 'docker compose -f docker-compose.unittest.yaml up'
+                        // Поднимем контейнеры для автотестов и завершим работу после их прохождения
+                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest up \
+                            --abort-on-container-exit \
+                            --exit-code-from api-autotest'
+                        // удалим контейнеры автотестов
+                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
                     }
                 }
             }
@@ -65,73 +83,61 @@ options {
             steps {
                 script {
                     dir("${REPO_NAME}") {
-                        sh 'docker compose up -d'
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'mlops_lab_database', 
+                                usernameVariable: 'DB_USER',
+                                passwordVariable: 'DB_PASSWORD'
+                            )
+                        ]) {
+                            // Запустим сборку и дождёмся, пока все контейнеры не будут здоровы (макс. 180 секунд)
+                            sh 'docker compose up -d --wait --wait-timeout 180'
+                        }
                     }
                 }
             }
         }
 
-        stage('Check container healthy') {
-            options {
-                timeout(time: 180, unit: 'SECONDS')
-            }
-            steps {
-                dir("${REPO_NAME}") {
-                    sh '''
-                        containerId=$(docker ps -qf "name=^${PROJECT_NAME}-api")
-                        until [ "`docker inspect -f {{.State.Health.Status}} $containerId`"=="healthy" ]; do
-                            sleep 0.1;
-                        done;
-                    '''
-                }
-            }
-        }
-
-        stage('Checkout container logs') {
+        stage('Check container logs') {
             steps {
                 dir("${REPO_NAME}") {
                     script {
-                        try {
-                            timeout(time: 30, unit: 'SECONDS') {
-                                sh '''
-                                    containerId=$(docker ps -qf "name=^${PROJECT_NAME}-api")
-                                    if [[ -z "$containerId" ]]; then
-                                        echo "No container running"
-                                    else
-                                        docker logs --tail 100 -f "$containerId"
-                                    fi
-                                '''
-                            }
-                        }
-                        catch (err) {}
+                        sh '''
+                            containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
+                            if [[ -z "$containerId" ]]; then
+                                echo "No container running"
+                            else
+                                docker logs --tail 100 "$containerId"
+                            fi
+                        '''
                     }
                 }
             }
         }
 
-        stage('Checkout coverage report'){
-            steps{
-                dir("${REPO_NAME}"){
-                        sh '''
-                        docker compose logs -t --tail 10
-                        '''
-                }
+        stage('Push') {
+            // Отправим образ только при сборке release версии из ветки master
+            when{
+                branch 'master'
             }
-        }
-
-        stage('Push'){
-            steps{
+            steps {
                     sh 'docker push ${DOCKERHUB_CREDS_USR}/${PROJECT_NAME}-api:latest'
             }
         }
-	}
+    }
 
     post {
         always {
+                // Выйдем из docker
                 sh 'docker logout'
                 script {
                     if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
-                        sh 'cd ${REPO_NAME} && docker compose down -v'
+                        dir("${REPO_NAME}") {
+                            // Остановим основную сборку
+                            sh 'docker compose down -v'
+                            // Остановим сборку автотестов
+                            sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
+                        }
                     }
                 }
                 cleanWs()

@@ -1,3 +1,4 @@
-# Model weights
-*.pkl
-/.coverage
+# IDE and Python cashe dirs
+__pycache__
+.idea
+.vscode

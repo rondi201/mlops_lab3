@@ -1,0 +1,5 @@
+services:
+  postgres:
+    # Прокинем внешний порт для базы данных PostgreSQL
+    ports:
+      - "5433:5432"

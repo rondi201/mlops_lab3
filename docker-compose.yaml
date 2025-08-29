@@ -1,15 +1,70 @@
 services:
   api:
-    # Сервис по сопоставлению СИЗ с людьми и нахождению нарушений в их ношении на основе данных от `human-info-detection-service`
-    build: .
-    image: rondi201/mlops-lab1-api:latest
+    # Основной backend сервис
+    image: rondi201/mlops-lab2-api${IMAGE_PREFIX:+-}${IMAGE_PREFIX:-}:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     healthcheck:
-      test: curl --output /dev/null --silent --head --fail http://127.0.0.1:8000/health
-      interval: 15s
+      test: curl --output /dev/null --silent --head --fail http://127.0.0.1:8000/api/health/
+      interval: 10m
       timeout: 3s
       retries: 4
-      start_period: 5s
+      start_period: 10s
     environment:
       LOG_LEVEL: INFO
+      APP_RUN__HOST: 0.0.0.0
+      APP_RUN__PORT: 8000
+      APP_DB__HOST: postgres
+      APP_DB__PORT: 5432
+      APP_DB__USER: ${DB_USER:-user}
+      APP_DB__PASSWORD: ${DB_PASSWORD}
+      APP_DB__DIALECT: ${DB_DIALECT:-postgresql+asyncpg}
+      APP_DB__DATABASE: ${DB_DATABASE:-ml-app}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    # Сервис базы данных PostgreSQL
+
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-ml-app}
+      POSTGRES_USER: ${DB_USER:-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    expose:
+      - 5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+    healthcheck:
+      test: pg_isready -U ${DB_USER:-user} -d ${DB_DATABASE:-ml-app}
+      interval: 3s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    # mssql:
+    #   # Сервис базы данных MS SQL Server
+    #   # image: mcr.microsoft.com/mssql/server:2022-latest
+
+    #   user: root # Для доступа к записи в mssql_data volume
+    #   ports:
+    #     - "1433:1433"
+    #   expose:
+    #     - 1433
+    #   environment:
+    #     ACCEPT_EULA: Y
+    #     MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+    #   healthcheck:
+    #     test: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" || exit 1
+    #     interval: 30s
+    #     timeout: 3s
+    #     retries: 10
+    #     start_period: 10s
+    #   volumes:
+    #     - mssql-data:/var/opt/mssql/data
+
+volumes:
+  postgres-data:
