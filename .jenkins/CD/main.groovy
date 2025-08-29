@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDS=credentials('mlops_lab')
-        DB_CREDS = credentials('mlops_lab_database')
         REPO_NAME='mlops_lab2'
         PROJECT_NAME='mlops_lab2'
     }

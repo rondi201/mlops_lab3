@@ -6,7 +6,6 @@
 переменных, таких как объекты базы данных, все инициализации спрятаны внуть кешированных функций.
 """
 
-from contextlib import asynccontextmanager
 from functools import cache
 from logging import Logger
 from typing import AsyncGenerator
@@ -33,7 +32,6 @@ def get_database_session_builder() -> DatabaseSessionBuilder:
     )
 
 
-# @asynccontextmanager
 async def get_database_session() -> AsyncGenerator[AsyncSession, None]:
     """Получение асинхронной сессии к базе данных"""
     async with get_database_session_builder().get_async_session() as session:
@@ -45,13 +43,6 @@ async def get_database_repository(
 ) -> DatabaseRepository:
     """Получение репозитория для работы с базой данных"""
     return DatabaseRepository(session)
-
-
-# async def get_database_seeder(
-#     session: AsyncSession = Depends(get_database_session),
-# ) -> DatabaseSeeder:
-#     """Получение модуля инициализации базы данных"""
-#     return DatabaseSeeder(session)
 
 
 async def get_app_logger() -> Logger:
