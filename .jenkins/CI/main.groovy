@@ -27,12 +27,12 @@ pipeline {
     stages {
         stage('Checkout repo dir') {
             steps {
-                    // Склонируем репозиторий и перейдём в него
-                    sh "git clone https://github.com/rondi201/${REPO_NAME}.git"
-                    // Сменим ветку на текущую (доступно при создании multibranch pipeline)
-                    sh "cd ${REPO_NAME} && git checkout ${env.BRANCH_NAME}"
-                    sh "cd ${REPO_NAME} && ls -lash"
-                    sh 'whoami'
+                // Склонируем репозиторий и перейдём в него
+                sh "git clone https://github.com/rondi201/${REPO_NAME}.git"
+                // Сменим ветку на текущую (доступно при создании multibranch pipeline)
+                sh "cd ${REPO_NAME} && git checkout ${env.BRANCH_NAME}"
+                sh "cd ${REPO_NAME} && ls -lash"
+                sh 'whoami'
             }
         }
 
@@ -128,19 +128,19 @@ pipeline {
 
     post {
         always {
-                // Выйдем из docker
-                sh 'docker logout'
-                script {
-                    if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
-                        dir("${REPO_NAME}") {
-                            // Остановим основную сборку
-                            sh 'docker compose down -v'
-                            // Остановим сборку автотестов
-                            sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
-                        }
+            // Выйдем из docker
+            sh 'docker logout'
+            script {
+                if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
+                    dir("${REPO_NAME}") {
+                        // Остановим основную сборку
+                        sh 'docker compose down -v'
+                        // Остановим сборку автотестов
+                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
                     }
                 }
-                cleanWs()
+            }
+            cleanWs()
         }
     }
 }

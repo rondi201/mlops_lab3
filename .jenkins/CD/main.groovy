@@ -1,20 +1,18 @@
 pipeline {
     agent any
-
     environment {
-        DOCKERHUB_CREDS=credentials('mlops_lab')
-        REPO_NAME='mlops_lab2'
-        PROJECT_NAME='mlops_lab2'
+        DOCKERHUB_CREDS = credentials('dockerhub')
+        REPO_NAME = 'mlops_lab2'
     }
 
-options {
+    options {
         timestamps()
         skipDefaultCheckout(true)
-	}
+    }
     stages {
-        stage('Login'){
-            steps{
-                    sh 'docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}'
+        stage('Login') {
+            steps {
+                sh 'docker login -u ${DOCKERHUB_CREDS_USR} -p ${DOCKERHUB_CREDS_PSW}'
             }
         }
 
