@@ -8,7 +8,7 @@ services:
     command: >
       /bin/sh -c '
         alembic upgrade head
-        pytest --cov=src -v 
+        pytest --cov=src -v --junit-xml=${TEST_REPORT_FILE:-test-report.xml}
       '
     environment:
       LOG_LEVEL: INFO

@@ -16,3 +16,8 @@ argument_specs:
         default: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
         description:
           - The password for connecting to database from app.
+      app_test_report_file:
+        type: "str"
+        required: false
+        description:
+          - The absolute or relative path from ./playbooks to save the test report in JUnitXML format.

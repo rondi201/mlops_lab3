@@ -82,10 +82,14 @@ pipeline {
                             vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
                             colorized: true,
                             extraVars: [
-                                db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml"
+                                db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
+                                // Сохраним логи автотестов в autotests.log
+                                app_test_report_file: "../test-results.xml"
                             ]
                         )
                     }
+                    // Проанализируем результат тестирования
+                    junit testResults: 'test-results.xml'
                 }
             }
         }
