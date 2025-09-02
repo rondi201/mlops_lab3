@@ -21,3 +21,8 @@ argument_specs:
         required: false
         description:
           - The absolute or relative path from ./playbooks to save the test report in JUnitXML format.
+      app_coverage_report_html_dir:
+        type: "str"
+        required: false
+        description:
+          - The absolute or relative path to dir from ./playbooks to save the coverage report in html format.

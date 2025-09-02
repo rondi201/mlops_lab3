@@ -83,13 +83,27 @@ pipeline {
                             colorized: true,
                             extraVars: [
                                 db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
-                                // Сохраним логи автотестов в autotests.log
-                                app_test_report_file: "../test-results.xml"
+                                // Сохраним логи автотестов
+                                app_test_report_file: "../test-results.xml",
+                                // Сохраним отчет о покрытии автотестами
+                                app_coverage_report_html_dir: "../coverage-report"
                             ]
                         )
                     }
-                    // Проанализируем результат тестирования
+                    // Зафиксируем результат тестирования
                     junit testResults: 'test-results.xml'
+                    // Зафиксируем отчет о покрытии
+                    publishHTML (
+                        target : [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'coverage-report',
+                            reportFiles: 'index.html',
+                            reportName: 'Coverage report',
+                            // reportTitles: ''
+                        ]
+                    )
                 }
             }
         }
