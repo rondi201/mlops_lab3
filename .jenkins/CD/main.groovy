@@ -3,6 +3,10 @@ pipeline {
     environment {
         DOCKERHUB_CREDS = credentials('dockerhub')
         REPO_NAME = 'mlops_lab2'
+        // Имя сборки
+        BUILD_NAME = "${env.BRANCH_NAME == 'master' ? 'prod' : 'dev'}"
+        // Имя секрета с паролем для Ansible Vault
+        ANSIBLE_VAULT_CREDS_NAME = "ansible_vault_${BUILD_NAME}_password"
     }
 
     options {
@@ -20,31 +24,32 @@ pipeline {
         stage('Checkout repo dir') {
             steps {
                     sh 'git clone https://github.com/rondi201/${REPO_NAME}.git'
-                    sh 'cd ${REPO_NAME} && ls -lash'
+                    sh 'ls -lash'
                     sh 'whoami'
             }
         }
 
         stage('Pull image'){
             steps{
-                dir("${REPO_NAME}") {
-                    sh 'docker compose pull'
-                }
+                sh 'docker compose pull'
             }
         }
 
         stage('Run services'){
             steps{
-                dir("${REPO_NAME}") {
-                    withCredentials([
-                        usernamePassword(
-                            credentialsId: 'mlops_lab_database', 
-                            usernameVariable: 'DB_USER',
-                            passwordVariable: 'DB_PASSWORD'
-                        )
-                    ]) {
-                        sh 'docker compose up -d'
-                    }
+            // Добавим цветовую тему
+                ansiColor('xterm') {
+                    // Запустим контейнера с помощью Ansible Playbook
+                    ansiblePlaybook(
+                        playbook: "playbooks/up.yaml",
+                        // Пароль от Ansible Vaults
+                        vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
+                        colorized: true,
+                        extraVars: [
+                            db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
+                            wait_timeout: 180
+                        ]
+                    )
                 }
             }
         }
@@ -55,8 +60,14 @@ pipeline {
             sh 'docker logout'
             // Остановим сервисы, т.к. CD часть тестовая и не подразумевает последующую работу контейнеров
             script {
-                if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
-                    sh 'cd ${REPO_NAME} && docker compose down -v'
+                if (fileExists("docker-compose.yaml")) {
+                    // Остановим контейнеры и удалим volume с помощью Ansible Playbook
+                    ansiblePlaybook(
+                        playbook: "playbooks/down.yaml",
+                        extraVars: [
+                            with_volumes: true
+                        ]
+                    )
                 }
             }
             cleanWs()
