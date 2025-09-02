@@ -1,0 +1,2 @@
+app_db_user: "{{ vault_app_db_user }}"
+app_db_password: "{{ vault_app_db_password }}"

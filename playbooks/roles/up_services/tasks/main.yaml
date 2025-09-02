@@ -1,0 +1,8 @@
+- name: Up API with services.
+  community.docker.docker_compose_v2:
+    project_src: ../
+    wait: "{{ wait_timeout | int > 0 }}"
+    wait_timeout: "{{ wait_timeout }}"
+  environment:
+    DB_PASSWORD: "{{ app_db_password }}"
+    DB_USER: "{{ app_db_user }}"

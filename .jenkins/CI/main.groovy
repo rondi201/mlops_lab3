@@ -11,11 +11,15 @@ pipeline {
     environment {
         DOCKERHUB_CREDS = credentials('dockerhub')
         DVC_MINIO_CREDS = credentials('dvc_minio')
-        REPO_NAME = 'mlops_lab2'
-        PROJECT_NAME = 'mlops-lab2'
+        REPO_NAME = 'mlops_lab3'
+        PROJECT_NAME = 'mlops-lab3'
         // Настройки внутри docker-container
         // Префикс в собираемых образах docker (если не master ветка - добавим префикс для исключения перезаписи образов)
         IMAGE_PREFIX = "${env.BRANCH_NAME == 'master' ? '' : env.BRANCH_NAME}"
+        // Имя сборки
+        BUILD_NAME = "${env.BRANCH_NAME == 'master' ? 'prod' : 'dev'}"
+        // Имя секрета с паролем для Ansible Vault
+        ANSIBLE_VAULT_CREDS_NAME = "ansible_vault_${BUILD_NAME}_password"
         // Зададим COMPOSE_PROJECT_NAME в зависимости от ветки, чтобы контейнеры не пересекались внутри агента
         COMPOSE_PROJECT_NAME = "${PROJECT_NAME}_${env.BRANCH_NAME}"
     }
@@ -25,26 +29,23 @@ pipeline {
         skipDefaultCheckout(true)
     }
     stages {
-        stage('Checkout repo dir') {
+        stage('Checkout repo') {
             steps {
-                // Склонируем репозиторий и перейдём в него
-                sh "git clone https://github.com/rondi201/${REPO_NAME}.git"
-                // Сменим ветку на текущую (доступно при создании multibranch pipeline)
-                sh "cd ${REPO_NAME} && git checkout ${env.BRANCH_NAME}"
-                sh "cd ${REPO_NAME} && ls -lash"
+                // Склонируем репозиторий из нужной ветки
+                git branch: "${env.BRANCH_NAME}", url: "https://github.com/rondi201/${REPO_NAME}.git"
+                // Выведем содержимое репозитория
+                sh "ls -lash"
                 sh 'whoami'
             }
         }
 
         stage('Get data files from DVC') {
             steps {
-                dir("${REPO_NAME}") {
-                    sh "dvc remote modify --local minio endpointurl ${params.dvc_minio_url}"
-                    sh 'dvc remote modify --local minio access_key_id "${DVC_MINIO_CREDS_USR}"'
-                    sh 'dvc remote modify --local minio secret_access_key "${DVC_MINIO_CREDS_PSW}"'
-                    sh 'dvc pull'
-                    sh 'tree . --filelimit 50'
-                }
+                sh "dvc remote modify --local minio endpointurl ${params.dvc_minio_url}"
+                sh 'dvc remote modify --local minio access_key_id "${DVC_MINIO_CREDS_USR}"'
+                sh 'dvc remote modify --local minio secret_access_key "${DVC_MINIO_CREDS_PSW}"'
+                sh 'dvc pull'
+                sh 'tree . --filelimit 50'
             }
         }
 
@@ -57,8 +58,13 @@ pipeline {
         stage('Build docker container') {
             steps {
                 script {
-                    dir("${REPO_NAME}") {
-                        sh 'docker compose build'
+                    // Добавим цветовую тему
+                    ansiColor('xterm') {
+                        // Запустим сборку с помощью Ansible Playbook
+                        ansiblePlaybook(
+                            playbook: "playbooks/build.yaml",
+                            colorized: true
+                        )
                     }
                 }
             }
@@ -67,14 +73,37 @@ pipeline {
         stage('Check auto tests') {
             steps {
                 script {
-                    dir("${REPO_NAME}") {
-                        // Поднимем контейнеры для автотестов и завершим работу после их прохождения
-                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest up \
-                            --abort-on-container-exit \
-                            --exit-code-from api-autotest'
-                        // удалим контейнеры автотестов
-                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
+                    // Добавим цветовую тему
+                    ansiColor('xterm') {
+                        // Запустим автотесты с помощью Ansible Playbook
+                        ansiblePlaybook(
+                            playbook: "playbooks/test.yaml",
+                            // Пароль от Ansible Vaults
+                            vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
+                            colorized: true,
+                            extraVars: [
+                                db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
+                                // Сохраним логи автотестов
+                                app_test_report_file: "../test-results.xml",
+                                // Сохраним отчет о покрытии автотестами
+                                app_coverage_report_html_dir: "../coverage-report"
+                            ]
+                        )
                     }
+                    // Зафиксируем результат тестирования
+                    junit testResults: 'test-results.xml'
+                    // Зафиксируем отчет о покрытии
+                    publishHTML (
+                        target : [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: 'coverage-report',
+                            reportFiles: 'index.html',
+                            reportName: 'Coverage report',
+                            // reportTitles: ''
+                        ]
+                    )
                 }
             }
         }
@@ -82,17 +111,19 @@ pipeline {
         stage('Run docker container') {
             steps {
                 script {
-                    dir("${REPO_NAME}") {
-                        withCredentials([
-                            usernamePassword(
-                                credentialsId: 'mlops_lab_database', 
-                                usernameVariable: 'DB_USER',
-                                passwordVariable: 'DB_PASSWORD'
-                            )
-                        ]) {
-                            // Запустим сборку и дождёмся, пока все контейнеры не будут здоровы (макс. 180 секунд)
-                            sh 'docker compose up -d --wait --wait-timeout 180'
-                        }
+                    // Добавим цветовую тему
+                    ansiColor('xterm') {
+                        // Запустим контейнера с помощью Ansible Playbook
+                        ansiblePlaybook(
+                            playbook: "playbooks/up.yaml",
+                            // Пароль от Ansible Vaults
+                            vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
+                            colorized: true,
+                            extraVars: [
+                                db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
+                                wait_timeout: 180
+                            ]
+                        )
                     }
                 }
             }
@@ -100,17 +131,15 @@ pipeline {
 
         stage('Check container logs') {
             steps {
-                dir("${REPO_NAME}") {
-                    script {
-                        sh '''
-                            containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
-                            if [[ -z "$containerId" ]]; then
-                                echo "No container running"
-                            else
-                                docker logs --tail 100 "$containerId"
-                            fi
-                        '''
-                    }
+                script {
+                    sh '''
+                        containerId=$(docker ps -qf "name=^${COMPOSE_PROJECT_NAME}-api")
+                        if [[ -z "$containerId" ]]; then
+                            echo "No container running"
+                        else
+                            docker logs --tail 100 "$containerId"
+                        fi
+                    '''
                 }
             }
         }
@@ -131,13 +160,14 @@ pipeline {
             // Выйдем из docker
             sh 'docker logout'
             script {
-                if (fileExists("${REPO_NAME}/docker-compose.yaml")) {
-                    dir("${REPO_NAME}") {
-                        // Остановим основную сборку
-                        sh 'docker compose down -v'
-                        // Остановим сборку автотестов
-                        sh 'docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v'
-                    }
+                if (fileExists("docker-compose.yaml")) {
+                    // Остановим контейнеры и удалим volume с помощью Ansible Playbook
+                    ansiblePlaybook(
+                        playbook: "playbooks/down.yaml",
+                        extraVars: [
+                            with_volumes: true
+                        ]
+                    )
                 }
             }
             cleanWs()

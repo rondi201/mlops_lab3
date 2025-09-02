@@ -1,0 +1,41 @@
+- name: Run autotests and down
+  block:
+    - name: Start autotests
+      command: >
+        docker compose \
+        -f ../docker-compose.autotest.yaml \
+        --env-file ../.env.autotest \
+        up \
+        --abort-on-container-exit \
+        --exit-code-from api-autotest
+      environment:
+        # Путь до отчета тестов
+        TEST_REPORT_FILE: "/app/test-report.xml"
+        # Путь до отчета покрытия
+        COVERAGE_REPORT_HTML_DIR: "/app/coverage-report"
+        DB_PASSWORD: "{{ app_db_password }}"
+        DB_USER: "{{ app_db_user }}"
+
+    - name: Copy test result report
+      command: >
+        docker compose \
+        -f ../docker-compose.autotest.yaml \
+        --env-file ../.env.autotest \
+        cp "api-autotest:/app/test-report.xml" "{{ app_test_report_file }}"
+      when: app_test_report_file is defined
+
+    - name: Copy coverage result report
+      command: >
+        docker compose \
+        -f ../docker-compose.autotest.yaml \
+        --env-file ../.env.autotest \
+        cp "api-autotest:/app/coverage-report" "{{ app_coverage_report_html_dir }}"
+      when: app_coverage_report_html_dir is defined
+
+  always:
+    - name: Down autotests and clear volumes
+      command: >
+        docker compose \
+        -f docker-compose.autotest.yaml \
+        --env-file .env.autotest \
+        down -v

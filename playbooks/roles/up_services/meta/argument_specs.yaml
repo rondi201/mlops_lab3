@@ -1,0 +1,20 @@
+argument_specs:
+  main:
+    short_description: Main entry point for upping app with services.
+    options:
+      app_db_user:
+        type: "str"
+        required: true
+        description:
+          - The username for connecting to database from app.
+      app_db_password:
+        type: "str"
+        required: true
+        description:
+          - The password for connecting to database from app.
+      wait_timeout:
+        type: "int"
+        required: false
+        default: 0
+        description:
+          - The timeout in seconds to wait for the services to start.

@@ -1,0 +1,14 @@
+- name: Up app services
+  hosts: localhost
+
+  vars:
+    db_vault_file: "vars/app_database/vault.dev.yaml"
+
+  vars_files:
+    - "vars/app_database/vars.yaml"
+    - "{{ db_vault_file }}"
+
+  tasks:
+    - name: Up app services
+      include_role:
+        name: up_services

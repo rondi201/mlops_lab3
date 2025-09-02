@@ -1,0 +1,2 @@
+- name: Down API with services.
+  command: "docker compose down {{ (with_volumes == true) | ternary('-v', '') }}"
