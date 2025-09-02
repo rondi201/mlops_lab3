@@ -1,0 +1,15 @@
+- name: Run autotests and down
+  block:
+    - name: Start autotests
+      command: >
+        docker compose \
+        -f docker-compose.autotest.yaml
+        --env-file .env.autotest up \
+        --abort-on-container-exit \
+        --exit-code-from api-autotest
+      vars:
+        app_db_user: "{{ app_db_user }}"
+        app_db_password: "{{ app_db_password }}"
+  always:
+    - name: Down autotests and clear volumes
+      command: "docker compose -f docker-compose.autotest.yaml --env-file .env.autotest down -v"

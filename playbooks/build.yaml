@@ -1,0 +1,6 @@
+- name: Build app docker images
+  hosts: localhost
+  tasks:
+    - name: Build images
+      include_role:
+        name: build_app

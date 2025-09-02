@@ -1,0 +1,10 @@
+argument_specs:
+  main:
+    short_description: Main entry point for down app with services.
+    options:
+      with_volumes:
+        type: "bool"
+        required: false
+        default: false
+        description:
+          - Delete used volumes.

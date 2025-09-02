@@ -1,0 +1,9 @@
+- name: Down app services
+  hosts: localhost
+
+  tasks:
+    - name: Down app services
+      include_role:
+        name: down_services
+      vars:
+        with_volumes: "{{ with_volumes | default(false) }}"

@@ -1,0 +1,15 @@
+- name: Up app services
+  hosts: localhost
+
+  vars_files:
+    - "vars/app_database/vars.yaml"
+    - "vars/app_database/vault.{{ lookup('env', 'BUILD_NAME') | default('dev') }}.yaml"
+
+  tasks:
+    - name: Up app services
+      include_role:
+        name: up_services
+      vars:
+        app_db_user: "{{ app_db_user }}"
+        app_db_password: "{{ app_db_password }}"
+        wait_timeout: "{{ wait_timeout | default(0) }}"

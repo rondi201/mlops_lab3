@@ -1,0 +1,2 @@
+- name: Build app docker images
+  command: docker compose build

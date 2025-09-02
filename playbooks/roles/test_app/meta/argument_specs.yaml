@@ -1,0 +1,18 @@
+argument_specs:
+  main:
+    short_description: Main entry point for run app auto-testing.
+    options:
+      app_db_user:
+        type: "str"
+        required: false
+        default: "test-user"
+        description:
+          - The username for connecting to database from app.
+      app_db_password:
+        type: "str"
+        required: false
+        # Сгенерируем пароль, если не задан, т.к. приложение для авто-тестов не содержит
+        # конфиденциальных данных и удалится при завершении тестов
+        default: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+        description:
+          - The password for connecting to database from app.
