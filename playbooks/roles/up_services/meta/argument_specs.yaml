@@ -15,5 +15,6 @@ argument_specs:
       wait_timeout:
         type: "int"
         required: false
+        default: 0
         description:
           - The timeout in seconds to wait for the services to start.

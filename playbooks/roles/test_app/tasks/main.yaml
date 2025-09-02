@@ -3,8 +3,9 @@
     - name: Start autotests
       command: >
         docker compose \
-        -f docker-compose.autotest.yaml
-        --env-file .env.autotest up \
+        -f ../docker-compose.autotest.yaml \
+        --env-file ../.env.autotest \
+        up \
         --abort-on-container-exit \
         --exit-code-from api-autotest
       vars:

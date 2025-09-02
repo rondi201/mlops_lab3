@@ -1,14 +1,14 @@
 - name: Run api autotests
   hosts: localhost
 
+  vars:
+    db_vault_file: "vars/app_database/vault.dev.yaml"
+
   vars_files:
     - "vars/app_database/vars.yaml"
-    - "vars/app_database/vault.{{ lookup('env', 'BUILD_NAME') | default('dev') }}.yaml"
+    - "{{ db_vault_file }}"
 
   tasks:
     - name: Run app auto-testing
       include_role:
         name: test_app
-      vars:
-        app_db_user: "{{ app_db_user }}"
-        app_db_password: "{{ app_db_password }}"
