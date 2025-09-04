@@ -2,9 +2,9 @@ pipeline {
     agent any
     environment {
         DOCKERHUB_CREDS = credentials('dockerhub')
-        REPO_NAME = 'mlops_lab2'
+        REPO_NAME = 'mlops_lab3'
         // Имя сборки
-        BUILD_NAME = "${env.BRANCH_NAME == 'master' ? 'prod' : 'dev'}"
+        BUILD_NAME = "prod"
         // Имя секрета с паролем для Ansible Vault
         ANSIBLE_VAULT_CREDS_NAME = "ansible_vault_${BUILD_NAME}_password"
     }
