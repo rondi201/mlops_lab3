@@ -8,13 +8,14 @@
         up \
         --abort-on-container-exit \
         --exit-code-from api-autotest
-      environment:
-        # Путь до отчета тестов
-        TEST_REPORT_FILE: "/app/test-report.xml"
-        # Путь до отчета покрытия
-        COVERAGE_REPORT_HTML_DIR: "/app/coverage-report"
-        DB_PASSWORD: "{{ app_db_password }}"
-        DB_USER: "{{ app_db_user }}"
+      # Объединим внешние и внутренние параметры переменных среды
+      environment: "{{ compose_env_param_dict | combine(extra_compose_env_dict)}}"
+      vars:
+        extra_compose_env_dict:
+          # Путь до отчета тестов
+          TEST_REPORT_FILE: "/app/test-report.xml"
+          # Путь до отчета покрытия
+          COVERAGE_REPORT_HTML_DIR: "/app/coverage-report"
 
     - name: Copy test result report
       command: >
@@ -22,6 +23,7 @@
         -f ../docker-compose.autotest.yaml \
         --env-file ../.env.autotest \
         cp "api-autotest:/app/test-report.xml" "{{ app_test_report_file }}"
+      environment: "{{ compose_env_param_dict }}"
       when: app_test_report_file is defined
 
     - name: Copy coverage result report
@@ -30,6 +32,7 @@
         -f ../docker-compose.autotest.yaml \
         --env-file ../.env.autotest \
         cp "api-autotest:/app/coverage-report" "{{ app_coverage_report_html_dir }}"
+      environment: "{{ compose_env_param_dict }}"
       when: app_coverage_report_html_dir is defined
 
   always:
@@ -39,3 +42,4 @@
         -f docker-compose.autotest.yaml \
         --env-file .env.autotest \
         down -v
+      environment: "{{ compose_env_param_dict }}"

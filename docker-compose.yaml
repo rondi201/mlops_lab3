@@ -1,7 +1,7 @@
 services:
   api:
     # Основной backend сервис
-    image: rondi201/mlops-lab2-api${IMAGE_PREFIX:+-}${IMAGE_PREFIX:-}:latest
+    image: rondi201/mlops-lab3-api${IMAGE_SUFFIX:+-}${IMAGE_SUFFIX:-}:latest
     build:
       context: ./
       dockerfile: Dockerfile

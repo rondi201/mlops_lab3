@@ -1,5 +1,6 @@
 - name: Up app services
   hosts: localhost
+  gather_facts: false
 
   vars:
     db_vault_file: "vars/app_database/vault.dev.yaml"

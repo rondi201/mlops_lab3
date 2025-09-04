@@ -1,3 +1,10 @@
 argument_specs:
   main:
     short_description: Main entry point for building app docker images.
+    options:
+      compose_env_param_dict:
+        type: "dict"
+        required: false
+        default: {}
+        description:
+          - Extra environment variables used with docker compose.

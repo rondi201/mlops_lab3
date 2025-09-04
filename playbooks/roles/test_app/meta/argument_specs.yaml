@@ -26,3 +26,9 @@ argument_specs:
         required: false
         description:
           - The absolute or relative path to dir from ./playbooks to save the coverage report in html format.
+      compose_env_param_dict:
+        type: "dict"
+        required: false
+        default: {}
+        description:
+          - Extra environment variables used with docker compose.

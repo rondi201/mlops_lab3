@@ -1,0 +1,20 @@
+argument_specs:
+  main:
+    short_description: Main entry point for building compose_env_param_dict.
+    options:
+      compose_env_param:
+        type: "string"
+        required: false
+        description:
+          - Extra environment variables used with docker compose, setted as a comma-separated list of key-value pairs.
+          - 'Example: "DB_PASSWORD=mysecretpassword, DB_USER:myuser"'
+      app_db_user:
+        type: "str"
+        required: false
+        description:
+          - The username for connecting to database from app.
+      app_db_password:
+        type: "str"
+        required: false
+        description:
+          - The password for connecting to database from app.

@@ -1,0 +1,23 @@
+- name: Set docker compose env param as fact from vars
+  set_fact:
+    # Зададим ключи если переменные определены
+    compose_env_param_dict: >-
+      {{
+        dict(
+          [
+            ('DB_USER', app_db_user),
+            ('DB_PASSWORD', app_db_password)
+          ] | selectattr('1', 'defined')
+        )
+      }}
+
+- name: Add docker compose env param form fact from compose_env_params
+  set_fact:
+    # Получим словарь из строки вида "a=1, b=2" и объединим с compose_env_param_dict
+    compose_env_param_dict: >-
+      {{ 
+        compose_env_param_dict | combine(
+            dict(compose_env_params | split(', ') | map('split','=', 1))
+        )
+      }}
+  when: compose_env_params is defined and compose_env_params != ""

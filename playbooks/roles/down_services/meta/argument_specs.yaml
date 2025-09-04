@@ -8,3 +8,9 @@ argument_specs:
         default: false
         description:
           - Delete used volumes.
+      compose_env_param_dict:
+        type: "dict"
+        required: false
+        default: {}
+        description:
+          - Extra environment variables used with docker compose.

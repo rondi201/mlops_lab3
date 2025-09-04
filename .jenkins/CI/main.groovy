@@ -15,13 +15,14 @@ pipeline {
         PROJECT_NAME = 'mlops-lab3'
         // Настройки внутри docker-container
         // Префикс в собираемых образах docker (если не master ветка - добавим префикс для исключения перезаписи образов)
-        IMAGE_PREFIX = "${env.BRANCH_NAME == 'master' ? '' : env.BRANCH_NAME}"
+        IMAGE_SUFFIX = "${env.BRANCH_NAME == 'master' ? '' : env.BRANCH_NAME}"
         // Имя сборки
         BUILD_NAME = "${env.BRANCH_NAME == 'master' ? 'prod' : 'dev'}"
         // Имя секрета с паролем для Ansible Vault
         ANSIBLE_VAULT_CREDS_NAME = "ansible_vault_${BUILD_NAME}_password"
         // Зададим COMPOSE_PROJECT_NAME в зависимости от ветки, чтобы контейнеры не пересекались внутри агента
         COMPOSE_PROJECT_NAME = "${PROJECT_NAME}_${env.BRANCH_NAME}"
+        COMPOSE_ENV_PARAMS = "IMAGE_SUFFIX=${IMAGE_SUFFIX}, COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}"
     }
 
     options {
@@ -63,7 +64,10 @@ pipeline {
                         // Запустим сборку с помощью Ansible Playbook
                         ansiblePlaybook(
                             playbook: "playbooks/build.yaml",
-                            colorized: true
+                            colorized: true,
+                            extraVars: [
+                                compose_env_params: "${COMPOSE_ENV_PARAMS}"
+                            ]
                         )
                     }
                 }
@@ -82,6 +86,7 @@ pipeline {
                             vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
                             colorized: true,
                             extraVars: [
+                                compose_env_params: "${COMPOSE_ENV_PARAMS}",
                                 db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
                                 // Сохраним логи автотестов
                                 app_test_report_file: "../test-results.xml",
@@ -120,6 +125,7 @@ pipeline {
                             vaultCredentialsId: "${ANSIBLE_VAULT_CREDS_NAME}",
                             colorized: true,
                             extraVars: [
+                                compose_env_params: "${COMPOSE_ENV_PARAMS}",
                                 db_vault_file: "vars/app_database/vault.${BUILD_NAME}.yaml",
                                 wait_timeout: 180
                             ]
@@ -165,6 +171,7 @@ pipeline {
                     ansiblePlaybook(
                         playbook: "playbooks/down.yaml",
                         extraVars: [
+                            compose_env_params: "${COMPOSE_ENV_PARAMS}",
                             with_volumes: true
                         ]
                     )

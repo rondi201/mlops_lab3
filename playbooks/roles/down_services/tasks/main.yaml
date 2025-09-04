@@ -1,2 +1,6 @@
 - name: Down API with services.
   command: "docker compose down {{ (with_volumes == true) | ternary('-v', '') }}"
+  environment: "{{ compose_env_param_dict }}"
+  register: docker_compose_down_out
+
+- debug: var=docker_compose_down_out.stdout_lines

@@ -1,5 +1,7 @@
 - name: Build app docker images
   hosts: localhost
+  gather_facts: false
+
   tasks:
     - name: Build images
       include_role:

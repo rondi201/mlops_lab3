@@ -1,5 +1,6 @@
 - name: Run api autotests
   hosts: localhost
+  gather_facts: false
 
   vars:
     db_vault_file: "vars/app_database/vault.dev.yaml"

@@ -1,2 +1,6 @@
 - name: Build app docker images
   command: docker compose build
+  environment: "{{ compose_env_param_dict }}"
+  register: docker_compose_build_out
+
+- debug: var=docker_compose_build_out.stdout_lines

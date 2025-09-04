@@ -1,5 +1,6 @@
 - name: Down app services
   hosts: localhost
+  gather_facts: false
 
   tasks:
     - name: Down app services

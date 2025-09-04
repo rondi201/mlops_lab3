@@ -1,8 +1,19 @@
-- name: Up API with services.
-  community.docker.docker_compose_v2:
-    project_src: ../
-    wait: "{{ wait_timeout | int > 0 }}"
-    wait_timeout: "{{ wait_timeout }}"
-  environment:
-    DB_PASSWORD: "{{ app_db_password }}"
-    DB_USER: "{{ app_db_user }}"
+- block:
+    - name: Up API with services.
+      community.docker.docker_compose_v2:
+        project_src: ../
+        wait: "{{ wait_timeout | int > 0 }}"
+        wait_timeout: "{{ wait_timeout }}"
+      environment: "{{ compose_env_param_dict }}"
+      register: docker_compose_up_out
+  rescue:
+    - name: Get logs form services
+      command: docker compose logs
+      register: docker_compose_logs_out
+
+    - debug: msg="{{ docker_compose_logs_out.stdout_lines }}"
+    - debug: msg="{{ docker_compose_logs_out.stderr_lines }}"
+
+    - name: Raise fail as the task was not successful
+      fail:
+        msg: "The upping API task was not successful. Aborting"
