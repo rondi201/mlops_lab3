@@ -23,7 +23,7 @@ pipeline {
         // Ввиду отсутствия отдельного проекта-сборки загрузим весь проект ради docker-compose файла
         stage('Checkout repo dir') {
             steps {
-                    sh 'git clone https://github.com/rondi201/${REPO_NAME}.git'
+                    git url: "https://github.com/rondi201/${REPO_NAME}.git"
                     sh 'ls -lash'
                     sh 'whoami'
             }
